@@ -31,7 +31,15 @@ Cyan = "\033[1;36m"
 White = "\033[0;37m"
 Bold_red = "\x1b[31;21m"
 reset = "\033[0m"
-high_green = '\033[1;93m'
+high_black = '\033[1;90m'
+high_red = '\033[1;91m'
+high_green = '\033[1;92m'
+high_yellow = '\033[1;93m'
+high_blue = '\033[1;94m'
+high_purple = '\033[1;95m'
+high_cyan = '\033[1;96m'
+high_white = '\033[1;97m'
+
 
 #  Log Formats
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'

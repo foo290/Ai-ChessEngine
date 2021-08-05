@@ -76,8 +76,26 @@ class _Logger(logging.Logger):
     def __init__(self, name):
         super().__init__(name)
 
-    def tlog(self, msg, prefix="[LOG]"):
-        print(f"{cfg.high_green}{prefix} [{self.name}] : {msg}{cfg.reset}")
+    def ylog(self, msg, prefix="LOG"):
+        print(f"{cfg.high_yellow}[{prefix.upper()}] [{self.name}] : {msg}{cfg.reset}")
+
+    def glog(self, msg, prefix="LOG"):
+        print(f"{cfg.high_green}[{prefix.upper()}] [{self.name}] : {msg}{cfg.reset}")
+
+    def plog(self, msg, prefix="LOG"):
+        print(f"{cfg.high_purple}[{prefix.upper()}] [{self.name}] : {msg}{cfg.reset}")
+
+    def clog(self, msg, prefix="LOG"):
+        print(f"{cfg.high_cyan}[{prefix.upper()}] [{self.name}] : {msg}{cfg.reset}")
+
+    def blog(self, msg, prefix="LOG"):
+        print(f"{cfg.high_blue}[{prefix.upper()}] [{self.name}] : {msg}{cfg.reset}")
+
+    def rlog(self, msg, prefix="LOG"):
+        print(f"{cfg.high_red}[{prefix.upper()}] [{self.name}] : {msg}{cfg.reset}")
+
+    def wlog(self, msg, prefix="LOG"):
+        print(f"{cfg.high_white}[{prefix.upper()}] [{self.name}] : {msg}{cfg.reset}")
 
 
 def get_custom_logger(name, level=logging.DEBUG, console_output: bool = True,

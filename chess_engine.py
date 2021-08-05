@@ -3,7 +3,13 @@ from typing import List
 
 from logger.logger import get_custom_logger
 
-log = get_custom_logger("CHESS-ENGINE").tlog
+log = get_custom_logger("CHESS-ENGINE")
+
+ylog = log.ylog
+glog = log.glog
+blog = log.blog
+rlog = log.rlog
+clog = log.clog
 
 
 class GameState:
@@ -36,6 +42,8 @@ class GameState:
         self.check_mate = False
         self.stale_mate = False
 
+        self.enpassant_possible = ()  # coord where enpassant capture is possible
+
     def is_empty(self, r, c):
         return self.board[r][c] == '--'
 
@@ -54,6 +62,23 @@ class GameState:
         elif move.piece_moved == 'bK':
             self.black_king_loc = (move.end_row, move.end_col)
 
+        # Pawn promotion
+        if move.is_pawn_promotion:
+            self.board[move.end_row][move.end_col] = move.piece_moved[0] + 'Q'
+
+        # EnPassant Move
+        if move.is_enpassant_move:
+            clog("Move is EnPassednt Move", 'enpassant')
+            self.board[move.start_row][move.end_col] = '--'
+
+        # update enPassant var
+        if move.piece_moved[1] == 'P' and abs(move.start_row - move.end_row) == 2:
+            glog(f"Updating enpassant var to {(move.start_row + move.end_row) // 2, move.start_col}")
+            self.enpassant_possible = ((move.start_row + move.end_row) // 2, move.start_col)
+        else:
+            glog("Resetting enpassant")
+            self.enpassant_possible = ()
+
     def undo_last_move(self):
         if self.move_logs:
             last_move = self.move_logs.pop()
@@ -66,38 +91,50 @@ class GameState:
             elif last_move.piece_moved == 'bK':
                 self.black_king_loc = (last_move.start_row, last_move.start_col)
 
+            # undo enPassant move
+            if last_move.is_enpassant_move:
+                self.board[last_move.end_row][last_move.end_col] = '--'
+                self.board[last_move.start_row][last_move.end_col] = last_move.piece_captured
+                self.enpassant_possible = (last_move.end_row, last_move.end_col)
+            # undo a 2 square pawn
+            if last_move.piece_moved[1] == 'P' and abs(last_move.start_row - last_move.end_row) == 2:
+                self.enpassant_possible = ()
+
             return True
 
     def get_valid_moves(self):
         """ considering checks """
-        log(f"Getting valid moves for {self.get_player_clr()}")
+        tempEnPassantPossible = self.enpassant_possible
+
+        ylog(f"Getting valid moves for {self.get_player_clr()}")
         moves = self.get_possible_moves()
 
-        log(f"Possible moves are {moves}")
+        ylog(f"{len(moves)} possible moves")
 
         for i in range(len(moves) - 1, -1, -1):
             self.make_move(moves[i])
 
             self.white_move = not self.white_move
             if self.in_check():
-                log(f"Move : {moves[i]} leaving king in check, removing this move from valid moves...")
+                ylog(f"Move : {moves[i]} leaving king in check, removing this move from valid moves...")
                 moves.remove(moves[i])
 
             self.white_move = not self.white_move
             self.undo_last_move()
 
         if len(moves) == 0:
-            log("NO VALID MOVES LEFT, Checking game state...")
+            ylog("NO VALID MOVES LEFT, Checking game state...")
             if self.in_check():
-                log("CHECK MATE!")
+                rlog("CHECK MATE!")
                 self.check_mate = True
             else:
-                log("STALE MATE!")
+                rlog("STALE MATE!")
                 self.stale_mate = True
         else:
             self.stale_mate = self.check_mate = False
 
-        log(f"Valid moves are {moves}")
+        self.enpassant_possible = tempEnPassantPossible
+        ylog(f"{len(moves)} valid moves")
         return moves
 
     def in_check(self):
@@ -108,16 +145,16 @@ class GameState:
 
     def square_under_attack(self, r, c):
         self.white_move = not self.white_move
-        log("Getting Opponent's moves...")
+        ylog("Getting Opponent's moves...")
         opponent_moves = self.get_possible_moves()
-        log(f"Opponent moves are : {opponent_moves}")
+        ylog(f"Opponent moves are : {len(opponent_moves)}")
 
         self.white_move = not self.white_move
         for move in opponent_moves:
             if move.end_row == r and move.end_col == c:
-                log(f"Move: {move} leaving square in check, returning true.")
+                clog(f"Move: {move} leaving square in check, returning true.")
                 return True
-        log("Opponent can not attack king, returning false")
+        rlog("Opponent can not attack king, returning false")
         return False
 
     def get_possible_moves(self):
@@ -142,9 +179,14 @@ class GameState:
             if c - 1 >= 0:
                 if self.board[r - 1][c - 1][0] == 'b':
                     moves.append(Move((r, c), (r - 1, c - 1), self.board))
-                if c + 1 <= 7:
-                    if self.board[r - 1][c + 1][0] == 'b':
-                        moves.append(Move((r, c), (r - 1, c + 1), self.board))
+                elif (r - 1, c - 1) == self.enpassant_possible:
+                    moves.append(Move((r, c), (r - 1, c - 1), self.board, isEnpassant=True))
+
+            if c + 1 <= 7:
+                if self.board[r - 1][c + 1][0] == 'b':
+                    moves.append(Move((r, c), (r - 1, c + 1), self.board))
+                elif (r - 1, c + 1) == self.enpassant_possible:
+                    moves.append(Move((r, c), (r - 1, c + 1), self.board, isEnpassant=True))
 
         else:
             if self.board[r + 1][c] == '--':
@@ -155,9 +197,14 @@ class GameState:
             if c - 1 >= 0:
                 if self.board[r + 1][c - 1][0] == 'w':
                     moves.append(Move((r, c), (r + 1, c - 1), self.board))
+                elif (r + 1, c - 1) == self.enpassant_possible:
+                    moves.append(Move((r, c), (r + 1, c - 1), self.board, isEnpassant=True))
+
                 if c + 1 <= 7:
                     if self.board[r + 1][c + 1][0] == 'w':
                         moves.append(Move((r, c), (r + 1, c + 1), self.board))
+                    elif (r + 1, c + 1) == self.enpassant_possible:
+                        moves.append(Move((r, c), (r + 1, c + 1), self.board, isEnpassant=True))
 
     def get_knight_moves(self, r, c, moves):
         knightMoves = ((-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1))
@@ -243,7 +290,8 @@ class Move:
     files_to_cols = {k: v for k, v in zip([i for i in string.ascii_lowercase[:8]], [i for i in range(8)])}
     cols_to_files = {v: k for k, v in files_to_cols.items()}
 
-    def __init__(self, startSQ, endSQ, board):
+    def __init__(self, startSQ, endSQ, board, isEnpassant=False):
+
         self.start_row, self.start_col = startSQ
         self.end_row, self.end_col = endSQ
 
@@ -251,6 +299,14 @@ class Move:
 
         self.piece_moved = board[self.start_row][self.start_col]
         self.piece_captured = board[self.end_row][self.end_col]
+        self.is_pawn_promotion = (
+                                         self.piece_moved == 'wP' and self.end_row == 0) or (
+                                         self.piece_moved == 'bP' and self.end_row == 7
+                                 )
+
+        self.is_enpassant_move = isEnpassant
+        if self.is_enpassant_move:
+            self.piece_captured = 'wP' if self.piece_moved == 'bP' else 'bP'
 
     def get_chess_notation(self):
         return self.get_rank_file(self.start_row, self.start_col) + " -> " + self.get_rank_file(self.end_row,
@@ -268,6 +324,5 @@ class Move:
 
     def __repr__(self):
         return f"{self.get_chess_notation()}"
-
 
 # print(Move.rows_to_ranks)
