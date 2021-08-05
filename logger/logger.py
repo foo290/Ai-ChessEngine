@@ -72,6 +72,14 @@ def _get_global_file_handler(valid_file_path, level, formatter) -> logging.FileH
     return global_file_handler
 
 
+class _Logger(logging.Logger):
+    def __init__(self, name):
+        super().__init__(name)
+
+    def tlog(self, msg, prefix="[LOG]"):
+        print(f"{cfg.high_green}{prefix} [{self.name}] : {msg}{cfg.reset}")
+
+
 def get_custom_logger(name, level=logging.DEBUG, console_output: bool = True,
                       make_combined_logs: bool = cfg.COMBINED_LOGGING,
                       make_individual_logs: bool = cfg.INDIVIDUAL_LOGGING
@@ -88,7 +96,7 @@ def get_custom_logger(name, level=logging.DEBUG, console_output: bool = True,
 
     formatter = CustomFormatter()
 
-    _logger = logging.Logger(name)
+    _logger = _Logger(name)
 
     log_file_path: str = cfg.LOG_FILE_PATH
 

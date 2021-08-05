@@ -3,7 +3,7 @@ from typing import List
 
 from logger.logger import get_custom_logger
 
-log = get_custom_logger("CHESS-ENGINE")
+log = get_custom_logger("CHESS-ENGINE").tlog
 
 
 class GameState:
@@ -39,18 +39,20 @@ class GameState:
     def is_empty(self, r, c):
         return self.board[r][c] == '--'
 
+    def get_player_clr(self):
+        return "White" if self.white_move else "Black"
+
     def make_move(self, move):
         self.board[move.start_row][move.start_col] = '--'
         self.board[move.end_row][move.end_col] = move.piece_moved
 
         self.move_logs.append(move)
+        self.white_move = not self.white_move
 
         if move.piece_moved == 'wK':
             self.white_king_loc = (move.end_row, move.end_col)
         elif move.piece_moved == 'bK':
             self.black_king_loc = (move.end_row, move.end_col)
-
-        self.white_move = not self.white_move
 
     def undo_last_move(self):
         if self.move_logs:
@@ -58,30 +60,44 @@ class GameState:
             self.board[last_move.start_row][last_move.start_col] = last_move.piece_moved
             self.board[last_move.end_row][last_move.end_col] = last_move.piece_captured
             self.white_move = not self.white_move
+
+            if last_move.piece_moved == 'wK':
+                self.white_king_loc = (last_move.start_row, last_move.start_col)
+            elif last_move.piece_moved == 'bK':
+                self.black_king_loc = (last_move.start_row, last_move.start_col)
+
             return True
 
     def get_valid_moves(self):
         """ considering checks """
+        log(f"Getting valid moves for {self.get_player_clr()}")
         moves = self.get_possible_moves()
+
+        log(f"Possible moves are {moves}")
 
         for i in range(len(moves) - 1, -1, -1):
             self.make_move(moves[i])
 
             self.white_move = not self.white_move
             if self.in_check():
+                log(f"Move : {moves[i]} leaving king in check, removing this move from valid moves...")
                 moves.remove(moves[i])
 
             self.white_move = not self.white_move
             self.undo_last_move()
 
         if len(moves) == 0:
+            log("NO VALID MOVES LEFT, Checking game state...")
             if self.in_check():
+                log("CHECK MATE!")
                 self.check_mate = True
             else:
+                log("STALE MATE!")
                 self.stale_mate = True
         else:
             self.stale_mate = self.check_mate = False
 
+        log(f"Valid moves are {moves}")
         return moves
 
     def in_check(self):
@@ -92,12 +108,16 @@ class GameState:
 
     def square_under_attack(self, r, c):
         self.white_move = not self.white_move
+        log("Getting Opponent's moves...")
         opponent_moves = self.get_possible_moves()
+        log(f"Opponent moves are : {opponent_moves}")
 
         self.white_move = not self.white_move
         for move in opponent_moves:
             if move.end_row == r and move.end_col == c:
+                log(f"Move: {move} leaving square in check, returning true.")
                 return True
+        log("Opponent can not attack king, returning false")
         return False
 
     def get_possible_moves(self):
@@ -110,7 +130,6 @@ class GameState:
                     piece = self.board[r][c][1]
                     self.move_generator_map[piece](r, c, moves)
 
-        # log.debug(f"valid Moves: {moves}")
         return moves
 
     def get_pawn_moves(self, r, c, moves):
@@ -251,4 +270,4 @@ class Move:
         return f"{self.get_chess_notation()}"
 
 
-print(Move.rows_to_ranks)
+# print(Move.rows_to_ranks)
