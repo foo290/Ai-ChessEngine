@@ -1,7 +1,7 @@
 from chess_engine import GameState, Move
 import pygame
 import os
-from .ui_effects import Colors
+from .ui_effects import theme, Colors
 from typing import List
 from logger.logger import get_custom_logger
 
@@ -35,11 +35,20 @@ class GuiManager:
         self.animate = False
         self.running = True
         self.game_over = False
-        self.default_board_clr = [Colors.WHITE, Colors.DARK_BLACK]
+
+        self.default_board_clr = theme.default
         self.board_clr = self.default_board_clr
+        self.flip_colors_mode = False
+        self.all_themes = theme.get_all_themes()
 
     def set_board_color(self, color: List[Colors]):
         self.board_clr = color
+
+    def turn_on_color_flips(self):
+        self.flip_colors_mode = True
+
+    def turn_off_color_flips(self):
+        self.flip_colors_mode = False
 
     def highlight_turn(self, turn):
         if turn:
@@ -88,7 +97,6 @@ class GuiManager:
         self.draw_pieces(game_state.board)
 
     def draw_board(self):
-
         for r in range(self.DIMENSIONS):
             for c in range(self.DIMENSIONS):
                 color = self.board_clr[(r + c) % 2]
@@ -131,6 +139,8 @@ class GuiManager:
         self.load_images()
         valid_moves = self.game_state.get_valid_moves()
 
+        color_flip_mode_index = 0
+
         square_selected = ()  # row and col
         player_clicks = []  # have two tuples, where user clicks
 
@@ -165,12 +175,16 @@ class GuiManager:
                                 log.info(f'Piece Moved : {move.get_chess_notation()}')
                                 log.info(f"TURN : {'White' if self.game_state.white_move else 'Black'}")
 
-                                # game_state.make_move(valid_moves[valid_moves.index(move)])
-
                                 self.game_state.make_move(move)
                                 self.animate = self.move_made = True
                                 square_selected = ()
                                 player_clicks = []
+
+                                if self.flip_colors_mode:
+                                    if color_flip_mode_index >= len(self.all_themes):
+                                        color_flip_mode_index = 0
+                                    self.set_board_color(getattr(theme, self.all_themes[color_flip_mode_index]))
+                                    color_flip_mode_index += 1
                             else:
                                 player_clicks = [square_selected]
 
