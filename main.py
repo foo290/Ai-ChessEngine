@@ -3,5 +3,5 @@ from gui.ui_effects import theme
 
 if __name__ == '__main__':
     manager = GuiManager()
-    manager.set_board_color(theme.dark_mode)
+    manager.turn_on_color_flips()
     manager.run_main_loop()
