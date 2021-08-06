@@ -1,6 +1,8 @@
-from chess_engine.engine import GameState, Move
+from chess_engine import GameState, Move
 import pygame
 import os
+from .ui_effects import Colors
+from typing import List
 from logger.logger import get_custom_logger
 
 log = get_custom_logger("ChessEngine")
@@ -33,6 +35,11 @@ class GuiManager:
         self.animate = False
         self.running = True
         self.game_over = False
+        self.default_board_clr = [Colors.WHITE, Colors.DARK_BLACK]
+        self.board_clr = self.default_board_clr
+
+    def set_board_color(self, color: List[Colors]):
+        self.board_clr = color
 
     def load_images(self):
         for piece in self.pieces:
@@ -74,11 +81,10 @@ class GuiManager:
         self.draw_pieces(game_state.board)
 
     def draw_board(self):
-        colors = [pygame.Color((140, 140, 140)), pygame.Color((79, 79, 79))]
 
         for r in range(self.DIMENSIONS):
             for c in range(self.DIMENSIONS):
-                color = colors[(r + c) % 2]
+                color = self.board_clr[(r + c) % 2]
                 pygame.draw.rect(
                     self.screen, color, pygame.Rect(c * self.SQ_SIZE, r * self.SQ_SIZE, self.SQ_SIZE, self.SQ_SIZE)
                 )
