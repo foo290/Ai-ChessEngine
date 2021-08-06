@@ -41,6 +41,14 @@ class GuiManager:
     def set_board_color(self, color: List[Colors]):
         self.board_clr = color
 
+    def highlight_turn(self, turn):
+        if turn:
+            pygame.draw.rect(self.screen, pygame.Color('red'), pygame.Rect(0, 0, self.WIDTH, 5))
+            pygame.draw.rect(self.screen, pygame.Color('green'), pygame.Rect(0, self.HEIGHT-5, self.WIDTH, 5))
+        else:
+            pygame.draw.rect(self.screen, pygame.Color('green'), pygame.Rect(0, 0, self.WIDTH, 5))
+            pygame.draw.rect(self.screen, pygame.Color('red'), pygame.Rect(0, self.HEIGHT - 5, self.WIDTH, 5))
+
     def load_images(self):
         for piece in self.pieces:
             self.IMAGES[piece] = pygame.transform.scale(
@@ -67,8 +75,7 @@ class GuiManager:
         font = pygame.font.SysFont("Helvetica", 32, True, False)
         text_object = font.render(text, False, pygame.Color((255, 89, 223)))
 
-        text_loc = pygame.Rect(
-            0, 0, self.WIDTH, self.HEIGHT).move(
+        text_loc = pygame.Rect(0, 0, self.WIDTH, self.HEIGHT).move(
             self.WIDTH / 2 - text_object.get_width() / 2,
             self.HEIGHT / 2 - text_object.get_height() / 2
         )
@@ -200,6 +207,8 @@ class GuiManager:
             elif self.game_state.stale_mate:
                 self.game_over = True
                 self.draw_text("Stale mate")
+
+            self.highlight_turn(self.game_state.white_move)
 
             self.clock.tick(self.MAX_FPS)
             pygame.display.flip()
