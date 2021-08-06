@@ -1,7 +1,11 @@
-import string
 from typing import List
+from .moves import Move
 
 from logger.logger import get_custom_logger
+
+__all__ = [
+    'GameState'
+]
 
 log = get_custom_logger("CHESS-ENGINE")
 
@@ -180,13 +184,13 @@ class GameState:
                 if self.board[r - 1][c - 1][0] == 'b':
                     moves.append(Move((r, c), (r - 1, c - 1), self.board))
                 elif (r - 1, c - 1) == self.enpassant_possible:
-                    moves.append(Move((r, c), (r - 1, c - 1), self.board, isEnpassant=True))
+                    moves.append(Move((r, c), (r - 1, c - 1), self.board, is_enpassant=True))
 
             if c + 1 <= 7:
                 if self.board[r - 1][c + 1][0] == 'b':
                     moves.append(Move((r, c), (r - 1, c + 1), self.board))
                 elif (r - 1, c + 1) == self.enpassant_possible:
-                    moves.append(Move((r, c), (r - 1, c + 1), self.board, isEnpassant=True))
+                    moves.append(Move((r, c), (r - 1, c + 1), self.board, is_enpassant=True))
 
         else:
             if self.board[r + 1][c] == '--':
@@ -198,13 +202,13 @@ class GameState:
                 if self.board[r + 1][c - 1][0] == 'w':
                     moves.append(Move((r, c), (r + 1, c - 1), self.board))
                 elif (r + 1, c - 1) == self.enpassant_possible:
-                    moves.append(Move((r, c), (r + 1, c - 1), self.board, isEnpassant=True))
+                    moves.append(Move((r, c), (r + 1, c - 1), self.board, is_enpassant=True))
 
                 if c + 1 <= 7:
                     if self.board[r + 1][c + 1][0] == 'w':
                         moves.append(Move((r, c), (r + 1, c + 1), self.board))
                     elif (r + 1, c + 1) == self.enpassant_possible:
-                        moves.append(Move((r, c), (r + 1, c + 1), self.board, isEnpassant=True))
+                        moves.append(Move((r, c), (r + 1, c + 1), self.board, is_enpassant=True))
 
     def get_knight_moves(self, r, c, moves):
         knightMoves = ((-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2, -1), (2, 1))
@@ -281,48 +285,3 @@ class GameState:
                         break
                 else:
                     break
-
-
-class Move:
-    rank_to_rows = {k: v for k, v in zip([str(i) for i in range(1, 9)], [i for i in range(8)][::-1])}
-    rows_to_ranks = {v: k for k, v in rank_to_rows.items()}
-
-    files_to_cols = {k: v for k, v in zip([i for i in string.ascii_lowercase[:8]], [i for i in range(8)])}
-    cols_to_files = {v: k for k, v in files_to_cols.items()}
-
-    def __init__(self, startSQ, endSQ, board, isEnpassant=False):
-
-        self.start_row, self.start_col = startSQ
-        self.end_row, self.end_col = endSQ
-
-        self.move_id = self.start_row * 100 + self.start_col * 100 + self.end_row * 10 + self.end_col
-
-        self.piece_moved = board[self.start_row][self.start_col]
-        self.piece_captured = board[self.end_row][self.end_col]
-        self.is_pawn_promotion = (
-                                         self.piece_moved == 'wP' and self.end_row == 0) or (
-                                         self.piece_moved == 'bP' and self.end_row == 7
-                                 )
-
-        self.is_enpassant_move = isEnpassant
-        if self.is_enpassant_move:
-            self.piece_captured = 'wP' if self.piece_moved == 'bP' else 'bP'
-
-    def get_chess_notation(self):
-        return self.get_rank_file(self.start_row, self.start_col) + " -> " + self.get_rank_file(self.end_row,
-                                                                                                self.end_col)
-
-    def get_rank_file(self, r, c):
-        return self.cols_to_files[c] + self.rows_to_ranks[r]
-
-    def __eq__(self, other):
-        if isinstance(other, Move):
-            return self.move_id == other.move_id
-
-    def __str__(self):
-        return f"{self.get_chess_notation()}"
-
-    def __repr__(self):
-        return f"{self.get_chess_notation()}"
-
-# print(Move.rows_to_ranks)
